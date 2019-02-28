@@ -1,11 +1,14 @@
 package com.udesc.ceavi.deso.empds.backend.services.implementations;
 
+import com.mongodb.gridfs.GridFSDBFile;
 import com.udesc.ceavi.deso.empds.backend.repository.ImageRepository;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import com.udesc.ceavi.deso.empds.backend.services.interfaces.ImageService;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsOperations;
@@ -22,14 +25,14 @@ public class ImageConcreta implements ImageService {
 
     @Autowired
     private ImageRepository imageRepository;
+
     @Autowired
     private GridFsOperations gridFsOperations;
 
 
     @Override
-    public void saveImage(MultipartFile multipartFile) {
+    public ObjectId saveImage(MultipartFile multipartFile) {
         DBObject metadata = new BasicDBObject();
-//        metadata.put("", "===========");
         System.out.println(multipartFile.getResource().getFilename());
         InputStream inputStream = null;
         try {
