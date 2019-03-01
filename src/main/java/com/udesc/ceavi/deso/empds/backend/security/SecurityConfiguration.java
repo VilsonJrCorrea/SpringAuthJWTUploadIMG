@@ -27,6 +27,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 //                .antMatchers(HttpMethod.POST, "/*").permitAll()
                 .antMatchers(HttpMethod.POST, SecurityConstants.SIGN_UP_URL).permitAll()
                 .antMatchers("/*/admin/**").hasRole("ADMIN")
+//                .antMatchers(HttpMethod.GET,"/uploads").permitAll()//******************************tirar
 
                 .and()
                 .addFilter(new JWTAuthenticationFilter(authenticationManager()))

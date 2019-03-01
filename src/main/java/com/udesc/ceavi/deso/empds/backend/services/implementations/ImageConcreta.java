@@ -1,5 +1,6 @@
 package com.udesc.ceavi.deso.empds.backend.services.implementations;
 
+import com.udesc.ceavi.deso.empds.backend.config.UploadConfig;
 import com.udesc.ceavi.deso.empds.backend.model.Image;
 import com.udesc.ceavi.deso.empds.backend.repository.ImageRepository;
 import com.mongodb.BasicDBObject;
@@ -8,66 +9,105 @@ import com.mongodb.client.gridfs.model.GridFSFile;
 import com.udesc.ceavi.deso.empds.backend.services.interfaces.ImageService;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsOperations;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class ImageConcreta implements ImageService {
 
+
     @Autowired
     private ImageRepository imageRepository;
-//
-//    @Autowired
-//    private GridFsOperations gridFsOperations;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Override
     public Image saveImage(MultipartFile multipartFile) {
+        String path = "";
+        String url = "";
+        String nameWithDate = "";
+        String originalName = "";
         Image image = null;
         try {
-            String[] metadata = {"type", "image"};
-            image = imageRepository.save(new Image(multipartFile.getOriginalFilename(), multipartFile.getContentType(), multipartFile.getBytes(), metadata));
+            File dir = new File(UploadConfig.ROOT_PATH);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            String timestamp = new SimpleDateFormat("ddMMyyyyHHmmss").format(new Date());
+            System.out.println(timestamp);
+            originalName = multipartFile.getOriginalFilename();
+            nameWithDate = timestamp + multipartFile.getOriginalFilename();
+            url = dir.getAbsolutePath() + File.separator + timestamp + multipartFile.getOriginalFilename();
+            path = dir.getAbsolutePath();
+            System.out.println(url);
+            File serverFile = new File(url);
+            multipartFile.transferTo(serverFile);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-//        DBObject metadata = new BasicDBObject();
-//        System.out.println(multipartFile.getResource().getFilename());
-//        InputStream inputStream = null;
-//        try {
-//            inputStream = multipartFile.getInputStream();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        metadata.put("type", "image");
-//        ObjectId objectId = gridFsOperations.store(inputStream, multipartFile.getResource().getFilename(), multipartFile.getContentType(), metadata);
-//        Query query = new Query();
-//        query.addCriteria(Criteria.where("_id").is(objectId));
-
-//        multipartFile.getResource()
-//        multipartFile.getContentType()
-//        multipartFile.getInputStream()
-//        multipartFile.getBytes()
-//        GridFSFile gridFSFile = gridFsOperations.findOne(query);
-//        GridFsResource gridFsResource = gridFsOperations.getResource(gridFSFile);
-//    imageRepository.save()
-
-//        Image image = new Image(multipartFile, multipartFile.getName());
-//        image = imageRepository.save(image);
-
+        image = imageRepository.save(new Image(originalName, nameWithDate, multipartFile.getSize(), url, path));
         return image;
     }
-//        return ResponseEntity.ok(new Response<Login>(this.loginService.cadastrar(login)));
+
 
     @Override
-    public void getImages(String id) {
-//        GridFSFile gridFSDBFile = gridFsOperations.findOne(new Query(Criteria.where("_id").is(id)));
-//        System.out.println("File " + gridFSDBFile.getFilename());
+    public Resource findImageById(String id) {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(id));
+        Image image = mongoTemplate.findOne(query, Image.class);
+        Path fileStorageLocation = Paths.get(image.getPath()).toAbsolutePath().normalize();
+        Resource resource = findResource(fileStorageLocation, image);
+        return resource;
+    }
+
+    @Override
+    public List<Resource> findAll() {
+        List<Image> images = mongoTemplate.findAll(Image.class);
+        List<Resource> resourcesList = new ArrayList<>();
+        for (Image image : images) {
+            Path fileStorageLocation = Paths.get(image.getPath()).toAbsolutePath().normalize();
+            Resource resource = findResource(fileStorageLocation, image);
+            resourcesList.add(resource);
+        }
+        return resourcesList;
+    }
+
+    private Resource findResource(Path fileStorageLocation, Image image) {
+        Resource resource = null;
+        try {
+            Files.createDirectories(fileStorageLocation);
+            Path filePath = fileStorageLocation.resolve(image.getNameWithDate()).normalize();
+            resource = new UrlResource(filePath.toUri());
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return resource;
     }
 }
