@@ -41,13 +41,13 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
             return null;
         }
         System.out.println(" getAuthenticationToken " + token);
-        String cnpj = Jwts.parser().setSigningKey(SecurityConstants.SECRET)
+        String username = Jwts.parser().setSigningKey(SecurityConstants.SECRET)
                 .parseClaimsJws(token.replace(SecurityConstants.TOKEN_PREFIX, ""))
                 .getBody()
                 .getSubject();
 
-        UserDetails userDetails = customUserDetailService.loadUserByUsername(cnpj);
+        UserDetails userDetails = customUserDetailService.loadUserByUsername(username);
         System.out.println("getAuthenticationToken userdetails " + userDetails);
-        return cnpj != null ? new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()) : null;
+        return username != null ? new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities()) : null;
     }
 }

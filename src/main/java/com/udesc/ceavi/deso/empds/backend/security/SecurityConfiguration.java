@@ -24,11 +24,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers(HttpMethod.GET, SecurityConstants.SIGN_UP_URL).permitAll()
                 .antMatchers("/*/admin/**").hasRole("ADMIN")
-//                .antMatchers(HttpMethod.POST, "/*").permitAll()
-                .antMatchers(HttpMethod.POST, SecurityConstants.SIGN_UP_URL).permitAll()
                 .antMatchers("/*/admin/**").hasRole("ADMIN")
-//                .antMatchers(HttpMethod.GET,"/uploads").permitAll()//******************************tirar
-
                 .and()
                 .addFilter(new JWTAuthenticationFilter(authenticationManager()))
                 .addFilter(new JWTAuthorizationFilter(authenticationManager(), customUserDetailService));
@@ -38,6 +34,4 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.userDetailsService(customUserDetailService).passwordEncoder(new BCryptPasswordEncoder());
     }
-
-
 }
